@@ -1,5 +1,6 @@
 <template>
     <header class="header">
+      <h1 class="title">POKEDEX - Teste Técnico</h1> 
       <input
         type="text"
         v-model="searchQuery"
@@ -42,8 +43,15 @@
   <style scoped>
   .header {
     display: flex;
-    justify-content: center;
+    flex-direction: column; 
+    align-items: center; 
     margin-bottom: 20px;
+  }
+  
+  .title {
+    font-size: 24px; 
+    margin-bottom: 10px; 
+    color: #333; 
   }
   
   .search-bar {
