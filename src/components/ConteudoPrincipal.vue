@@ -7,7 +7,7 @@
     <div v-if="!selectedPokemon">
       <div class="pokemon-list">
         <PokemonCard
-          v-for="pokemon in filteredPokemons"
+          v-for="pokemon in paginatedPokemons"
           :key="pokemon.id"
           :name="pokemon.name"
           :number="pokemon.id"
@@ -17,7 +17,7 @@
       </div>
       <div class="pagination">
         <button @click="prevPage" :disabled="loading || offset === 0">Anterior</button>
-        <button @click="nextPage" :disabled="loading || offset + limit >= totalPokemons">Próximo</button>
+        <button @click="nextPage" :disabled="loading || offset + limit >= filteredPokemons.length">Próximo</button>
       </div>
     </div>
 
@@ -29,7 +29,7 @@
 </template>
 
 <script lang="ts">
-import { ref, onMounted } from 'vue';
+import { ref, onMounted, computed } from 'vue';
 import { fetchPokemons, type PokemonDetails } from '../http/index';
 import PokemonCard from '../components/CardPokemon.vue';
 import Pokemon from '../components/Pokemon.vue';
@@ -47,16 +47,14 @@ export default {
     const selectedPokemon = ref<number | null>(null);
     const offset = ref(0);
     const limit = 20;
-    const totalPokemons = ref(0);
     const loading = ref(false);
 
     const loadPokemons = async () => {
       loading.value = true;
       try {
-        const data = await fetchPokemons(limit, offset.value);
+        const data = await fetchPokemons(1118, 0); 
         pokemons.value = data;
-        filteredPokemons.value = data; //  lista filtrada com todos os Pokémon
-        totalPokemons.value = 1118; // Número total de Pokémon
+        filteredPokemons.value = data; // Inicialmente, a lista filtrada é igual à lista completa
       } catch (error) {
         console.error('Erro ao carregar Pokémon:', error);
       } finally {
@@ -74,19 +72,22 @@ export default {
         pokemon.name.toLowerCase().includes(lowerCaseQuery) ||
         pokemon.id.toString().includes(lowerCaseQuery)
       );
+      offset.value = 0; // Reiniciar a página ao filtrar
     };
 
+    const paginatedPokemons = computed(() => {
+      return filteredPokemons.value.slice(offset.value, offset.value + limit);
+    });
+
     const nextPage = () => {
-      if (offset.value + limit < totalPokemons.value) {
+      if (offset.value + limit < filteredPokemons.value.length) {
         offset.value += limit;
-        loadPokemons();
       }
     };
 
     const prevPage = () => {
       if (offset.value > 0) {
         offset.value -= limit;
-        loadPokemons();
       }
     };
 
@@ -99,12 +100,12 @@ export default {
       filteredPokemons,
       selectedPokemon,
       selectPokemon,
-      filterPokemons,  
+      filterPokemons,
+      paginatedPokemons,
       nextPage,
       prevPage,
       offset,
       limit,
-      totalPokemons,
       loading,
     };
   },
