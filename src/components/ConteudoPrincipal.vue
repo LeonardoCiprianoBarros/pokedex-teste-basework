@@ -1,11 +1,21 @@
 <template>
   <div>
     <!-- Barra de pesquisa no header -->
-    <Header @search="filterPokemons" />
+    <Header @search="filterPokemons" @filterByType="filterPokemonsByType" />
+
+    <!-- Carregando Pokémon -->
+    <div v-if="loading" class="loading-container">
+      <div class="loader"></div>
+      <p>Carregando Pokémon...</p>
+    </div>
 
     <!-- Lista de Pokémon filtrada -->
-    <div v-if="!selectedPokemon">
-      <div class="pokemon-list">
+    <div v-if="!loading && !selectedPokemon">
+      <div v-if="filteredPokemons.length === 0" class="no-results">
+        <p>Nenhum Pokémon encontrado.</p>
+      </div>
+
+      <div class="pokemon-list" v-else>
         <PokemonCard
           v-for="pokemon in paginatedPokemons"
           :key="pokemon.id"
@@ -23,7 +33,7 @@
 
     <!-- Detalhes do Pokémon -->
     <div v-else>
-      <Pokemon :pokemonId="selectedPokemon" @back="selectedPokemon = null" />
+      <Pokemon v-if="selectedPokemon" :pokemonId="selectedPokemon" @back="selectedPokemon = null" />
     </div>
   </div>
 </template>
@@ -54,7 +64,7 @@ export default {
       try {
         const data = await fetchPokemons(1118, 0); 
         pokemons.value = data;
-        filteredPokemons.value = data; // Inicialmente, a lista filtrada é igual à lista completa
+        filteredPokemons.value = data; 
       } catch (error) {
         console.error('Erro ao carregar Pokémon:', error);
       } finally {
@@ -66,12 +76,25 @@ export default {
       selectedPokemon.value = id;
     };
 
+    // Função para filtrar Pokémons por nome ou número
     const filterPokemons = (query: string) => {
       const lowerCaseQuery = query.toLowerCase();
       filteredPokemons.value = pokemons.value.filter(pokemon =>
         pokemon.name.toLowerCase().includes(lowerCaseQuery) ||
         pokemon.id.toString().includes(lowerCaseQuery)
       );
+      offset.value = 0; // Reiniciar a página ao filtrar
+    };
+
+    // Função para filtrar Pokémons por tipo
+    const filterPokemonsByType = (selectedType: string) => {
+      if (selectedType) {
+        filteredPokemons.value = pokemons.value.filter(pokemon =>
+          pokemon.types.some(type => type.type.name === selectedType)
+        );
+      } else {
+        filteredPokemons.value = pokemons.value; // Se nenhum tipo estiver selecionado, mostra todos os Pokémons
+      }
       offset.value = 0; // Reiniciar a página ao filtrar
     };
 
@@ -101,6 +124,7 @@ export default {
       selectedPokemon,
       selectPokemon,
       filterPokemons,
+      filterPokemonsByType, //  nova função de filtragem por tipo
       paginatedPokemons,
       nextPage,
       prevPage,
@@ -136,5 +160,39 @@ button {
 button:disabled {
   cursor: not-allowed;
   opacity: 0.5;
+}
+
+/* Loading Container */
+.loading-container {
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  align-items: center;
+  height: 200px;
+}
+
+.loader {
+  border: 6px solid #f3f3f3;
+  border-radius: 50%;
+  border-top: 6px solid #3498db;
+  width: 50px;
+  height: 50px;
+  animation: spin 1s linear infinite;
+}
+
+@keyframes spin {
+  0% {
+    transform: rotate(0deg);
+  }
+  100% {
+    transform: rotate(360deg);
+  }
+}
+
+.no-results {
+  text-align: center;
+  margin: 20px;
+  font-size: 18px;
+  color: #333;
 }
 </style>
